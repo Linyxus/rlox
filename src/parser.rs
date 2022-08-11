@@ -136,7 +136,7 @@ pub fn parse_decl(compiler: &mut Compiler) {
 }
 
 fn parse_var_decl(compiler: &mut Compiler) {
-    let varname_idx = parse_var(compiler, "Expecting variable name after `var`");
+    let varname_idx = parse_var_name(compiler, "Expecting variable name after `var`");
 
     if try_consume(compiler, TokenType::Equal) {
         parse_expression(compiler);
@@ -153,7 +153,7 @@ fn define_variable(compiler: &mut Compiler, varname_idx: usize) {
     compiler.emit_inst(Inst::OP_DEFINE_GLOBAL { name_idx: varname_idx });
 }
 
-fn parse_var(compiler: &mut Compiler, err_msg: &str) -> usize {
+fn parse_var_name(compiler: &mut Compiler, err_msg: &str) -> usize {
     consume(compiler, TokenType::Identifier, err_msg);
     let var_name = compiler.parser.previous.content.clone();
     make_str(compiler, var_name)

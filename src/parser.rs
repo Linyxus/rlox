@@ -225,6 +225,12 @@ fn parse_number(compiler: &mut Compiler) {
     emit_constant(compiler, Value::DOUBLE { data: num });
 }
 
+fn parse_variable(compiler: &mut Compiler) {
+    let vname: String = compiler.parser.previous.content.clone();
+    let vid = make_str(compiler, vname);
+    compiler.emit_inst(Inst::OP_GET_GLOBAL { name_idx: vid });
+}
+
 fn parse_string(compiler: &mut Compiler) {
     let s: String;
     {
@@ -373,6 +379,7 @@ impl ParseRule {
         m.insert(TokenType::Less, ParseRule::new(None, Some(parse_binary), Precedence::Comparison));
 
         m.insert(TokenType::Number, ParseRule::new(Some(parse_number), None, Precedence::None));
+        m.insert(TokenType::Identifier, ParseRule::new(Some(parse_variable), None, Precedence::None));
         m.insert(TokenType::String, ParseRule::new(Some(parse_string), None, Precedence::None));
         m.insert(TokenType::False, ParseRule::new(Some(parse_literal), None, Precedence::None));
         m.insert(TokenType::True, ParseRule::new(Some(parse_literal), None, Precedence::None));

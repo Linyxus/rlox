@@ -24,6 +24,10 @@ pub fn display_inst(inst: &Inst, chunk: &Chunk) {
             let var_name = &chunk.value_array.data[*name_idx];
             println!("DEFINE_GLOBAL {} ({})", name_idx, show_value(var_name));
         },
+        Inst::OP_GET_GLOBAL { name_idx } => {
+            let var_name = &chunk.value_array.data[*name_idx];
+            println!("GET_GLOBAL {} ({})", name_idx, show_value(var_name));
+        },
     }
 }
 

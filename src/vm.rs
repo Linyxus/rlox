@@ -229,11 +229,32 @@ impl VM {
         self.push(op(&v1, &v2))
     }
 
-    fn define_variable(&mut self, name_idx: usize) {
+    fn read_name(&self, name_idx: usize) -> String {
         let v = self.chunk.value_array.read(name_idx);
         let varname = v.as_string().expect("Expecting string as variable name");
+        varname.to_string()
+    }
+
+    fn define_variable(&mut self, name_idx: usize) {
+        let varname = self.read_name(name_idx);
         let v = self.pop().expect("Expecting non-empty stack").clone();
         self.update_global(varname.into(), v);
+    }
+
+    fn get_variable(&mut self, name_idx: usize) {
+        let varname = self.read_name(name_idx);
+        let v = self.globals.get(&varname);
+
+        match v {
+            Option::None => {
+                let msg = format!("Undefined variable: {}", varname);
+                self.runtime_error(msg);
+            },
+            Option::Some(v) => {
+                let v0 = v.clone();
+                self.push(v0);
+            },
+        }
     }
 
     pub fn run(&mut self) -> InterpretResult {
@@ -259,7 +280,12 @@ impl VM {
                     kop(self);
                 },
                 Inst::OP_DEFINE_GLOBAL { name_idx } => {
-                    self.define_variable(name_idx.clone());
+                    let idx = name_idx.clone();
+                    self.define_variable(idx);
+                },
+                Inst::OP_GET_GLOBAL { name_idx } => {
+                    let idx = name_idx.clone();
+                    self.get_variable(idx);
                 },
                 Inst::CONSTANT { idx } => {
                     let val = self.chunk.value_array.read(*idx);

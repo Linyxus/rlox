@@ -128,8 +128,7 @@ pub fn parse_stmt(compiler: &mut Compiler) {
     if try_consume(compiler, TokenType::Print) {
         parse_print_stmt(compiler);
     } else {
-        // TODO
-        panic!("Unexpected token: {:?}", compiler.parser.current);
+        parse_expr_stmt(compiler);
     }
 }
 

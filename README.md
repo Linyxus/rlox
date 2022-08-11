@@ -1,2 +1,4 @@
-# rlox
- Rust implementation of the Lox language.
+# A Rust implementation of Lox
+
+This is my toy implementation of Lox in Rust.
+

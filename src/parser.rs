@@ -107,6 +107,13 @@ fn emit_str(compiler: &mut Compiler, s: String) {
     emit_constant(compiler, v)
 }
 
+fn make_str(compiler: &mut Compiler, s: String) -> usize {
+    let r = Rc::new(Obj::Str { data: s });
+    let v = Value::OBJ { data: r };
+
+    compiler.current_chunk.value_array.add_constant(v)
+}
+
 fn emit_constant(compiler: &mut Compiler, v: Value) {
     let idx = compiler.current_chunk.value_array.add_constant(v);
     compiler.emit_inst(Inst::CONSTANT { idx });
@@ -121,7 +128,35 @@ pub fn parse_expression(compiler: &mut Compiler) {
 }
 
 pub fn parse_decl(compiler: &mut Compiler) {
-    parse_stmt(compiler);
+    if try_consume(compiler, TokenType::Var) {
+        parse_var_decl(compiler);
+    } else {
+        parse_stmt(compiler);
+    }
+}
+
+fn parse_var_decl(compiler: &mut Compiler) {
+    let varname_idx = parse_var(compiler, "Expecting variable name after `var`");
+
+    if try_consume(compiler, TokenType::Equal) {
+        parse_expression(compiler);
+    } else {
+        emit_constant(compiler, Value::NIL);
+    }
+
+    consume(compiler, TokenType::SemiColon, "Expecting ';' after variable decl");
+
+    define_variable(compiler, varname_idx);
+}
+
+fn define_variable(compiler: &mut Compiler, varname_idx: usize) {
+    compiler.emit_inst(Inst::OP_DEFINE_GLOBAL { name_idx: varname_idx });
+}
+
+fn parse_var(compiler: &mut Compiler, err_msg: &str) -> usize {
+    consume(compiler, TokenType::Identifier, err_msg);
+    let var_name = compiler.parser.previous.content.clone();
+    make_str(compiler, var_name)
 }
 
 pub fn parse_stmt(compiler: &mut Compiler) {

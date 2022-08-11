@@ -23,6 +23,7 @@ pub enum Inst {
     OP_LT,
     OP_KCALL { tp: KMethod },
     OP_POP,
+    OP_DEFINE_GLOBAL { name_idx: usize },
 }
 
 #[derive(Debug)]

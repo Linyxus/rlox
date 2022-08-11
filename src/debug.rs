@@ -20,6 +20,10 @@ pub fn display_inst(inst: &Inst, chunk: &Chunk) {
         Inst::OP_LT => println!("OP_LT"),
         Inst::OP_KCALL { tp } => println!("OP_KCALL {}", tp.clone() as u32),
         Inst::OP_POP => println!("OP_POP"),
+        Inst::OP_DEFINE_GLOBAL { name_idx } => {
+            let var_name = &chunk.value_array.data[*name_idx];
+            println!("DEFINE_GLOBAL {} ({})", name_idx, show_value(var_name));
+        },
     }
 }
 

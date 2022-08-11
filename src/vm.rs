@@ -2,6 +2,8 @@ use crate::chunk::{ Chunk, Inst, KMethod };
 use crate::value::Value;
 use crate::debug::{show_value, display_inst};
 
+use std::collections::HashMap;
+
 use phf::phf_map;
 
 const STACK_MAX: usize = 128;
@@ -13,6 +15,8 @@ pub struct VM {
 
     stack: Vec<Value>,
     sp: u32,
+
+    globals: HashMap<String, Value>,
 
     enable_trace: bool,
 }
@@ -128,7 +132,7 @@ macro_rules! both_matches {
 
 impl VM {
     pub fn new(chunk: Chunk) -> VM {
-        VM { chunk, pc: 0, stack: VM::create_empty_stack(), sp: 0, enable_trace: false }
+        VM { chunk, pc: 0, stack: VM::create_empty_stack(), sp: 0, globals: HashMap::new(), enable_trace: false }
     }
 
     fn create_empty_stack() -> Vec<Value> {
@@ -151,6 +155,10 @@ impl VM {
 
     pub fn trace_off(&mut self) {
         self.enable_trace = false;
+    }
+
+    pub fn update_global(&mut self, name: String, v: Value) {
+        self.globals.insert(name, v);
     }
 
     fn unop_typecheck(&mut self, checker: fn(&Value) -> bool, desc: &str) -> bool {
@@ -221,11 +229,19 @@ impl VM {
         self.push(op(&v1, &v2))
     }
 
+    fn define_variable(&mut self, name_idx: usize) {
+        let v = self.chunk.value_array.read(name_idx);
+        let varname = v.as_string().expect("Expecting string as variable name");
+        let v = self.pop().expect("Expecting non-empty stack").clone();
+        self.update_global(varname.into(), v);
+    }
+
     pub fn run(&mut self) -> InterpretResult {
         let res = loop {
 
             if self.enable_trace {
                 self.display_stack();
+                self.display_globals();
                 display_inst(&self.chunk.data[self.pc as usize], &self.chunk)
             }
 
@@ -241,6 +257,9 @@ impl VM {
                 Inst::OP_KCALL { tp } => {
                     let kop = KERNAL_METHODS.get(&(tp.clone() as u8)).expect("Unsupported kernal method");
                     kop(self);
+                },
+                Inst::OP_DEFINE_GLOBAL { name_idx } => {
+                    self.define_variable(name_idx.clone());
                 },
                 Inst::CONSTANT { idx } => {
                     let val = self.chunk.value_array.read(*idx);
@@ -342,10 +361,18 @@ impl VM {
     }
 
     pub fn display_stack(&self) {
-        print!("    ");
+        print!(" STACK: ");
         for i in 0..self.sp {
             let value = &self.stack[i as usize];
             print!("[ {} ] ", show_value(value));
+        }
+        println!("");
+    }
+
+    pub fn display_globals(&self) {
+        print!(" GLOBALS: ");
+        for (k, v) in &self.globals {
+            print!("{} => {}; ", k, show_value(v));
         }
         println!("");
     }
